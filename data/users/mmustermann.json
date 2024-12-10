@@ -1,0 +1,7 @@
+{
+    "user_id" : "mmustermann",
+    "user_first_name" : "Max",
+    "user_last_name" : "Mustermann",
+    "gender": "male",
+    "language" : "german"
+}

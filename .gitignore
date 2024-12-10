@@ -1,0 +1,5 @@
+.archive
+.env
+__pycache__
+config.yaml
+log.txt
