@@ -3,3 +3,4 @@ colorama
 mysql-connector-python
 chevron
 pyyaml
+flask

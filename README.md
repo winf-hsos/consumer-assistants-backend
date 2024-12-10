@@ -4,7 +4,7 @@ This repository contains the backend code for an LLM-based consumer assistant fr
 
 # Usage
 
-# Clone the repository
+## Clone the repository
 
 Clone the repository using the following command:
 

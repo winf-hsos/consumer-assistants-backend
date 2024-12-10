@@ -100,3 +100,5 @@ def chat(conversation_id, user_message):
 
     # Save the conversation back to the conversations.json file
     save_conversation(conversation_id, conversation)
+
+    return response_message
