@@ -1,0 +1,4 @@
+agent_id: product_agent
+name: Product Expert Agent
+description: The product expert agent is responsible for answering questions about products.
+introduction: "I am the product expert agent. I can help with questions about products."

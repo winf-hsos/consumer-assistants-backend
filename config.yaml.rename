@@ -6,11 +6,13 @@ logging:
 data:
   conversations_path: data/conversations
   assistants_path: data/assistants
+  agents_path: data/agents
   users_path: data/users
-  prompt_templates_path: data/prompt_templates
+  user_prompt_templates_path: data/prompt_templates/user_prompt_templates
+  system_prompt_templates_path: data/prompt_templates/system_prompt_templates
 
-openai:
-  api_key: <set-your-openai-api-key-here>
+llm:
+  openai_api_key: <set-your-openai-api-key-here>
 
 connections:
   products_db:

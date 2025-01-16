@@ -1,0 +1,6 @@
+assistant_id: inverbio_assistant
+name: InVerBio Assistant
+description: Der InVerBio Assistant ist ein freundlicher Einkaufsassistent.
+
+# The assistant's agent
+agent_id: principal_agent

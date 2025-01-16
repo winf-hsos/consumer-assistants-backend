@@ -1,21 +1,23 @@
-from lib.agent import PrincipalAgent
-from lib.llm import translate
-from lib.logging import log_debug
+from lib.agent import Agent
+from lib.config import get_assistant
 
 class Assistant:
-    def __init__(self, assistant, user):
-        self.assistant = assistant
-        self.user = user
-        self.principal_agent = self._create_principal_agent(assistant.get("principal_agent"))
+    def __init__(self, assistant_id):
+        self.assistant_id = assistant_id
+        self._setup()
+        
+    def _setup(self):
+        assistant = get_assistant(self.assistant_id)
+        self.assistant_description = assistant.get("assistant_description")
 
-    def _create_principal_agent(self, principal_agent):
-        return PrincipalAgent(principal_agent)
+        # Assistant must have exactly one agent
+        self._create_agent(assistant.get("agent_id"))
 
+    def _create_agent(self, agent_id):
+        self.agent = Agent(agent_id)
 
-    def respond(self, lines):
-        answer = self.principal_agent.respond(lines)
-
-        if self.user.language == "en":
-            return answer
-        else:
-            return translate(answer, self.user.language)
+    def respond(self, lines, user):
+        answer = self.agent.respond(lines, user)
+        print(f"Answer: {answer}")
+        return answer
+        

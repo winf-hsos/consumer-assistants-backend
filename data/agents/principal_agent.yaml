@@ -1,0 +1,66 @@
+agent_id: principal_agent
+name: Principal Agent
+description: The principal agent is the main agent in the system. The agent's task is to receive messages and decide who of the experts should be included in generating an answer.
+
+agents:
+  - product_agent
+   
+# Default settings for language model (can be overidden by a step)
+llm:
+  provider: "openai"
+  model: "gpt-4o"
+
+# The steps that the agent should follow when processing a message
+steps:
+ 
+  # The second step decides whether to answer directly (SMALLTALK, FOLLOWUP) or summarize and forward the message to experts (SUMARY)
+  - type: "decision_prompt"
+    name: "dispatch_message"
+    description: "Decide weather to answer directly or forward the message to experts."
+
+    prompt_templates: 
+      system: "orchestrator_system_prompt"
+      user: "orchestrator_user_prompt_summarize_user_query"
+
+    input_variables: 
+      - input_name: "chat_history"
+        source: "global.input" # The variable to map to this input
+        description: "The current chat history"
+
+    output_variables: 
+      - output_name: "decision"
+        source: "decision_code" # The step type "decision_prompt" creates an ouput variable called "decision_code"
+        description: "A prefixed answer with options (a) SMALLTALK, (b) FOLLOWUP, (c) SUMMARY"
+        options: # Possible values for the decision code for validation purposes
+          - "SMALLTALK"
+          - "FOLLOWUP"
+          - "SUMMARY"
+
+      - output_name: "decision_text"
+        source: "decision_text" # The step type "decision_prompt" creates a second optional ouput variable called "decision_text"
+        description: "The summary text of the user query"
+
+  - type: "list_from_prompt"
+    name: "decide_experts"
+    description: "Decide which experts to include by generating a comma-separated list."
+    
+    if: "dispatch_message.decision=SUMMARY" # Run this step only if the condition is true
+       
+    disabled: false # If true, the step will be skipped
+    
+    prompt_templates: 
+      system: "orchestrator_system_prompt"
+      user: "orchestrator_user_prompt_select_experts"
+    
+    input_variables: 
+      - input_name: "user_query"
+        source: "dispatch_message.decision_text"
+        description: "The summary text from the previous step"
+
+    output_variables:
+      - output_name: "experts"
+        source: "list_items" # The step type "list_from_prompt" creates an ouput variable called "list_items"
+        description: "A comma-separted list of experts to include in the answer. Can be empty."
+
+  
+    

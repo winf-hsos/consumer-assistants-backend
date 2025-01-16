@@ -73,6 +73,25 @@ python server.py
 
 - `reset_conversation(conversation_id)` - Reset the conversation history for a given conversation ID.
 
+## Webserver
+
+TODO: DESCRIBE HOW TO USE THE WEBSERVER
+
+## Directory Structure
+
+The `data/` folder contains all configuration of the assistants and belonging agents, including the prompt templates. Conversations and user information is also stored in this folder:
+
+- `agents/`: Contains YAML files to describe the step logic for an agent. The file name (before `.yaml`) is the ID of the agent.
+
+- `assistants/`: Contains YAML files to describe an assisstant. The file name (before `.yaml`) is the ID of the assistant.
+
+- `conversations/`: Contains all conversations as JSON files. File name is `<user_id>_<conversation_nr>.json`
+
+- `promt_templates`: Contains all prompt templates, distiguished into system prompts and user prompts, for the agent's step logic.
+
+- `users/`: Contains all information regarding one user in a separate JSON file.
+
+---
 
 [![CC BY 4.0][cc-by-shield]][cc-by]
 
