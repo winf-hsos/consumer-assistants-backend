@@ -8,7 +8,9 @@ agents:
 # Default settings for language model (can be overidden by a step)
 llm:
   provider: "openai"
-  model: "gpt-4o"
+  model: "gpt-4o-mini"
+
+step_strategy: "sequential" # The strategy for executing steps. Can be "sequential" or "parallel"
 
 # The steps that the agent should follow when processing a message
 steps:

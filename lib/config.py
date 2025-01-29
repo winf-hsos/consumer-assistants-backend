@@ -28,8 +28,12 @@ def configure(parameter_name):
 def get_conversation(user_id, conversation_id):
     conversations_path = configure("data.conversations_path")
     # Load the configuration
-    with open(f'{conversations_path}/{user_id}_{conversation_id}.json', 'r', encoding="utf-8") as f:
-        conversation = json.load(f)
+    try:
+        with open(f'{conversations_path}/{user_id}_{conversation_id}.json', 'r', encoding="utf-8") as f:
+            conversation = json.load(f)
+    except FileNotFoundError:
+        conversation = None
+        raise Exception(f"Conversation {conversation_id} not found for user {user_id}")
     return conversation
 
 def save_conversation(conversation):

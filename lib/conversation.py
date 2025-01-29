@@ -1,7 +1,8 @@
 from lib.config import get_conversation, save_conversation
 from lib.assistant import Assistant
 from lib.user import User
-
+from lib.llm import get_llm
+from datetime import datetime
 class Conversation:
     def __init__(self, user_id, conversation_id):
         self.conversation_id = conversation_id
@@ -12,6 +13,7 @@ class Conversation:
         conversation = get_conversation(self.user_id, self.conversation_id)
 
         # TODO: Check if user_id matches the given user_id
+        # TODO: Was war hiermit nochmal gemeint?
 
         # Load the user
         self.user = User(self.user_id)
@@ -49,11 +51,13 @@ class Conversation:
     
     def continue_conversation(self, user_message = None):
         if user_message:
-            message = { "role": "user", "message": user_message }
+            message = { "role": "user", "message": user_message, "timestamp": datetime.now().isoformat() }
             self.lines.append(message)
     
         response = self.assistant.respond(self.lines, self.user)
-        message = { "role": "assistant", "message": response }
+        llm = get_llm()
+        response = llm.translate(response, target_language=self.user.language)
+        message = { "role": "assistant", "message": response,"timestamp": datetime.now().isoformat()  }
         self.lines.append(message)
 
         save_conversation(self.to_json())

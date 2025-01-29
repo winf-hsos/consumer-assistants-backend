@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
-from lib.llm import OpenAILLM
+from lib.llm import get_llm
 from lib.config import configure
 import chevron
-
 def create_step(step_definition):
     """Factory function to create a step instance based on the step definition."""
     step_type = step_definition.get("type")
@@ -100,10 +99,9 @@ class PromptStep(BaseStep):
         context.set_step_prompt(self.step_name, "system", resolved_system_prompt)
         context.set_step_prompt(self.step_name, "user", resolved_user_prompt)
 
-        # Execute the prompt using the LLM class
-        # TODO: Move the api_key to the LLM class
-        api_key = configure("llm.openai_api_key")
-        llm = OpenAILLM(api_key=api_key)
+   
+        # Call the LLM to complete the user prompt     
+        llm = get_llm()
         llm_output = llm.complete_user_prompt(resolved_system_prompt, resolved_user_prompt)
         return {"completion": llm_output}
     

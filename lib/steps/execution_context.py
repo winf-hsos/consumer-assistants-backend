@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+import os
 
 class ExecutionContext:
     """Central object holding all runtime data, logs, and metadata."""
@@ -15,6 +16,15 @@ class ExecutionContext:
 
         self.logs = []
         self.timestamp = datetime.now().isoformat()
+
+    def get_last_output(self)->str:
+        """Retrieve the last output from the context."""
+        last_step = list(self.context.keys())[-1]
+        # From the last step, get the last output key
+        last_steps_outputs = self.context[last_step]["outputs"]
+        last_output = list(last_steps_outputs.keys())[-1]
+ 
+        return last_steps_outputs[last_output]
 
     def retrieve_value(self, source):
         # Split source by dots
@@ -59,19 +69,19 @@ class ExecutionContext:
         """Retrieve specific variable from a step's input."""
         return self.context.get(step_name, {}).get("inputs", {}).get(key, None)
 
-    def get_final_response(self):
+
+    def get_final_response(self, step_strategy=None):
         """Retrieve the final response from the execution context."""
 
-        # TODO: Check if this logic makes sense. Currently, the last output from the last step is returned.
-        # This might need to be adjusted based on the actual implementation.
-
-        # Get the last step
-        last_step = list(self.context.keys())[-1]
-
-        # From the last step, get the last output key
-        last_steps_outputs = self.context[last_step]["outputs"]
-        last_output = list(last_steps_outputs.keys())[-1]
-        return last_steps_outputs[last_output]
+        if not step_strategy:
+                step_strategy = "sequential"
+        if step_strategy == "sequential":
+            return self.get_last_output()
+        elif step_strategy == "parallel":
+            # TODO: Implement parallel step strategy. I think this happens mainly in the context of multi-agent conversations.
+            pass
+        else:
+            raise Exception(f"Unknown step strategy: {step_strategy}")
 
     def log(self, message, level="INFO"):
         """Log execution details."""
@@ -80,6 +90,10 @@ class ExecutionContext:
 
     def save_to_file(self, filename):
         """Save the context and logs to a file."""
+
+        if not os.path.exists(os.path.dirname(filename)):
+            os.makedirs(os.path.dirname(filename))
+
         with open(filename, "w", encoding="utf-8") as file:
             file.write(json.dumps(
                 {

@@ -13,6 +13,7 @@ class Agent:
 
     def _setup(self):
         agent = get_agent(self.agent_id)
+        self.step_strategy = agent.get("step_strategy")
         self.introduction = agent.get("agent_introduction")
 
         # Create the agent's processing steps
@@ -51,6 +52,7 @@ class Agent:
             "steps": [step.to_json() for step in self.steps]
         }
 
+
     def respond(self, input, user):
         context = ExecutionContext(self, input, user)
         for step in self.steps:
@@ -59,5 +61,6 @@ class Agent:
         context.save_to_file(f"tmp/{self.agent_id}.json")
 
         # Determine the final response based on the execution context
-        response = context.get_final_response()
+        response = context.get_final_response(step_strategy=self.step_strategy)
+
         return response
