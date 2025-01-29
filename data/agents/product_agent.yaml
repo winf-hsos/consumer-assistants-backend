@@ -2,3 +2,37 @@ agent_id: product_agent
 name: Product Expert Agent
 description: The product expert agent is responsible for answering questions about products.
 introduction: "I am the product expert agent. I can help with questions about products."
+
+steps:
+  # The second step decides whether to answer directly (SMALLTALK, FOLLOWUP) or summarize and forward the message to experts (SUMARY)
+  - type: "string_prompt"
+    name: "generate_sql_query_products"
+    description: "Generate a SQL query to retrieve information about products."
+
+    prompt_templates: 
+      system: "product_agent_system_prompt"
+      user: "product_agent_prompt_generate_sql_query"
+
+    input_variables: 
+      - input_name: "user_query"
+        source: "dispatch_message.decision_text"
+        description: "The summary text from the previous step"
+
+    output_variables: 
+      - output_name: "sql_query"
+        source: "string" # The step type "string_prompt" creates an ouput variable called "string"
+        description: "generated sql query to retrieve information about products, based on the user query"
+
+  - type: "query_sql"
+    name: "query_products_db"
+    description: "Query the products database with the generated SQL query."
+
+    input_variables: 
+      - input_name: "sql_query"
+        source: "query" # The variable to map to this input
+        description: "The generated SQL query to retrieve information about products."
+
+    output_variables: 
+      - output_name: "products"
+        source: "query_results" # The step type "function_call" creates an ouput variable called "query_results"
+        description: "The products retrieved from the database based on the SQL query."

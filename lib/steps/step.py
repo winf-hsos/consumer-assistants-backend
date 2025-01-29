@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
 from lib.llm import get_llm
 from lib.config import configure
+from lib.steps.step_function_interface import execute_query_select
 import chevron
+from icecream import ic
 def create_step(step_definition):
     """Factory function to create a step instance based on the step definition."""
     step_type = step_definition.get("type")
@@ -9,6 +11,10 @@ def create_step(step_definition):
         return DecisionPromptStep(step_definition)
     elif step_type == "list_from_prompt":
         return ListFromPromptStep(step_definition)
+    elif step_type == "prompt":
+        return PromptStep(step_definition)
+    elif step_type == "query_sql":
+        return QuerySQLStep(step_definition)
     else:
         raise ValueError(f"Unknown step type: {step_type}")
 
@@ -91,11 +97,11 @@ class PromptStep(BaseStep):
         # Get the prompt templates based on the ids
         system_prompt = self.get_prompt_template(system_prompt_id, "system")
         user_prompt = self.get_prompt_template(user_prompt_id, "user")
-
+        
         # Resolve placeholders in the prompts
         resolved_system_prompt = chevron.render(system_prompt, inputs)
         resolved_user_prompt = chevron.render(user_prompt, inputs)
-
+        ic(resolved_user_prompt)
         context.set_step_prompt(self.step_name, "system", resolved_system_prompt)
         context.set_step_prompt(self.step_name, "user", resolved_user_prompt)
 
@@ -175,7 +181,6 @@ class ListFromPromptStep(PromptStep):
             return
 
         prompt_templates = self.step_definition.get("prompt_templates", {})
-
         # Run the prompt logic
         outputs = self.run_prompt(
             system_prompt_id=prompt_templates.get("system", ""),
@@ -184,8 +189,61 @@ class ListFromPromptStep(PromptStep):
             context=context
         )
         
+        ic(outputs)
         # For this step, parse output into a list (simulate)
         outputs["list_items"] = ["expert_1", "expert_2", "expert_3"]  # Placeholder example
 
         # Store outputs back to execution context
+        self.store_outputs(self.step_definition.get("output_variables", []), outputs, context)
+
+class StringFromPromptStep(PromptStep):
+    """
+    Executes a step that generates a string from a prompt.
+    """
+    def run(self, context):
+        inputs = self.resolve_inputs(self.step_definition.get("input_variables", []), context)
+
+        if(self.evaluate_condition(context)):
+            context.log(f"Running decision prompt with inputs: {inputs}", level="DEBUG")
+        else:
+            context.log(f"Skipping decision prompt due to unmet condition >{self.step_definition.get('if')}<", level="DEBUG")
+            return
+
+        prompt_templates = self.step_definition.get("prompt_templates", {})
+
+        # Run the prompt logic
+        outputs = self.run_prompt(
+            system_prompt_id=prompt_templates.get("system", ""),
+            user_prompt_id=prompt_templates.get("user", ""),
+            inputs=inputs,
+            context=context
+        )
+        outputs["string"] = outputs.get("completion")
+        # For this step, parse output into a string (simulate)
+        
+
+        # Store outputs back to execution context
+        self.store_outputs(self.step_definition.get("output_variables", []), outputs, context)
+
+class FunctionCallStep(BaseStep):
+    """
+    Executes a function .
+    """
+    def run_function(self, function_to_call, input):
+        if function_to_call == "execute_sql_query":
+            result = execute_query_select(input)
+            return {"query_results" : str(result)}
+        
+        
+
+class QuerySQLStep(FunctionCallStep):
+    def run(self, context):
+        inputs = self.resolve_inputs(self.step_definition.get("input_variables", []), context)
+        if(self.evaluate_condition(context)):
+            context.log(f"Running function call with inputs: {inputs}", level="DEBUG")
+        else:
+            context.log(f"Skipping function call due to unmet condition >{self.step_definition.get('if')}<", level="DEBUG")
+            return
+        function_to_call = "execute_sql_query"
+        outputs = self.run_function(function_to_call, inputs.get("query"))
         self.store_outputs(self.step_definition.get("output_variables", []), outputs, context)
