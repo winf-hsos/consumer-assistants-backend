@@ -1,20 +1,23 @@
 from datetime import datetime
 import json
 import os
-
+from icecream import ic
 class ExecutionContext:
     """Central object holding all runtime data, logs, and metadata."""
     def __init__(self, agent, input, user):
         self.agent = agent
         self.user = user
-       
         self.context = {}  # Holds variables grouped by step
         self.context["global"] = {
             "user": user.to_json(),
             "input": input
         }
+        self.context["agents"] = {
+            "introductions": self.agent.get_agents_introductions()
+        }
 
         self.logs = []
+        
         self.timestamp = datetime.now().isoformat()
 
     def get_last_output(self)->str:
@@ -33,6 +36,8 @@ class ExecutionContext:
         key = source_parts[1]
         if scope == "global":
             return self.context.get("global", {}).get(key, None)
+        elif scope == "agents":
+            return self.context.get("agents", {}).get(key, None)
         else:
             return self.get_step_output(scope, key)
 
@@ -68,25 +73,18 @@ class ExecutionContext:
     def get_step_input(self, step_name, key):
         """Retrieve specific variable from a step's input."""
         return self.context.get(step_name, {}).get("inputs", {}).get(key, None)
+    def get_input(self):
+        return self.context.get("global", {}).get("input", None)
 
-
-    def get_final_response(self, step_strategy=None):
+    def get_final_response(self):
         """Retrieve the final response from the execution context."""
+        return self.get_last_output()
 
-        if not step_strategy:
-                step_strategy = "sequential"
-        if step_strategy == "sequential":
-            return self.get_last_output()
-        elif step_strategy == "parallel":
-            # TODO: Implement parallel step strategy. I think this happens mainly in the context of multi-agent conversations.
-            pass
-        else:
-            raise Exception(f"Unknown step strategy: {step_strategy}")
 
     def log(self, message, level="INFO"):
         """Log execution details."""
         self.logs.append({"timestamp": datetime.now().isoformat(), "level": level, "message": message})
-        #print(f"[{level}] {message}")
+        # print(f"[{level}] {message}")
 
     def save_to_file(self, filename):
         """Save the context and logs to a file."""

@@ -10,7 +10,7 @@ llm:
   provider: "openai"
   model: "gpt-4o-mini"
 
-step_strategy: "sequential" # The strategy for executing steps. Can be "sequential" or "parallel"
+
 
 # The steps that the agent should follow when processing a message
 steps:
@@ -47,7 +47,7 @@ steps:
     description: "Decide which experts to include by generating a comma-separated list."
     
     if: "dispatch_message.decision=SUMMARY" # Run this step only if the condition is true
-       
+
     disabled: false # If true, the step will be skipped
     
     prompt_templates: 
@@ -58,12 +58,35 @@ steps:
       - input_name: "user_query"
         source: "dispatch_message.decision_text"
         description: "The summary text from the previous step"
-
+      - input_name: "experts_introductions"
+        source: "agents.introductions"
+        description: Introduction of the experts that belong to the agent
 
     output_variables:
       - output_name: "experts"
-        source: "list_items" # The step type "list_from_prompt" creates an ouput variable called "list_items"
+        source: "list_items" 
         description: "A comma-separted list of experts to include in the answer. Can be empty."
+  - type: "run_expert"
+    name: "run_expert"
+    description: "Run an expert agent to generate an answer."
+    
+    if: "dispatch_message.decision=SUMMARY" # Run this step only if the condition is true
+
+    disabled: false # If true, the step will be skipped
+    
+    input_variables: 
+      - input_name: "experts"
+        source: "decide_experts.experts"
+        description: "A comma-separted list of experts to include in the answer. Can be empty."
+      - input_name: "message"
+        source: "dispatch_message.decision_text"
+        description: "The summary text from the previous step"
+
+    output_variables: 
+      - output_name: "answers"
+        source: "answers" 
+        description: "The answer to the user query based on the database results."
+
 
   
     

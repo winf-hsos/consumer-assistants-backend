@@ -5,8 +5,8 @@ introduction: "I am the product expert agent. I can help with questions about pr
 
 steps:
   # The second step decides whether to answer directly (SMALLTALK, FOLLOWUP) or summarize and forward the message to experts (SUMARY)
-  - type: "string_prompt"
-    name: "generate_sql_query_products"
+  - type: "string_from_prompt"
+    name: "sql_query_products"
     description: "Generate a SQL query to retrieve information about products."
 
     prompt_templates: 
@@ -15,8 +15,9 @@ steps:
 
     input_variables: 
       - input_name: "user_query"
-        source: "dispatch_message.decision_text"
+        source: "global.input"
         description: "The summary text from the previous step"
+
 
     output_variables: 
       - output_name: "sql_query"
@@ -24,15 +25,38 @@ steps:
         description: "generated sql query to retrieve information about products, based on the user query"
 
   - type: "query_sql"
-    name: "query_products_db"
+    name: "query_products"
     description: "Query the products database with the generated SQL query."
 
     input_variables: 
       - input_name: "sql_query"
-        source: "query" # The variable to map to this input
+        source: "sql_query_products.sql_query" # The variable to map to this input
         description: "The generated SQL query to retrieve information about products."
 
     output_variables: 
       - output_name: "products"
-        source: "query_results" # The step type "function_call" creates an ouput variable called "query_results"
-        description: "The products retrieved from the database based on the SQL query."
+        source: "query_results" # The step type "query_sql" creates an ouput variable called "query_results"
+        description: "The products retrieved from the database based on the SQL query. Given as JSON."
+
+  - type: "string_from_prompt"
+    name: "answer_query_with_results"
+    description: "Answer the user query with the database results."
+
+    prompt_templates: 
+      system: "product_agent_system_prompt"
+      user: "product_agent_prompt_answer_query_with_db_results"
+
+    input_variables: 
+      - input_name: "user_query"
+        source: "global.input"
+        description: "The summary text from the previous step"
+      
+      - input_name : "query_results"
+        source: "query_products.products"
+        description: "The products retrieved from the database based on the SQL query. Given as JSON."
+
+
+    output_variables: 
+      - output_name: "answer"
+        source: "string" # The step type "string_prompt" creates an ouput variable called "string"
+        description: "The answer to the user query based on the database results."

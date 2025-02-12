@@ -54,6 +54,7 @@ def get_agent(agent_id):
     # Load the configuration
     with open(f'{agents_path}/{agent_id}.yaml', 'r') as f:
         agent_config = yaml.safe_load(f)
+
     return agent_config
 
 def get_user(user_id):

@@ -1,7 +1,10 @@
 import mysql.connector
 from mysql.connector import Error
+from mysql.connector.conversion import MySQLConverter
 from lib.config import configure
-
+import datetime
+from icecream import ic
+import sys
 # Replace with your MySQL server details
 host = configure('connections.products_db.host')
 database = configure('connections.products_db.database')
@@ -10,9 +13,11 @@ password = configure('connections.products_db.password')
 
 db_connection = None
 
+
 def execute_select_query(query):
     try:
         # Connect to the database
+    
         connection = connect()
 
         # Execute the query
@@ -20,8 +25,12 @@ def execute_select_query(query):
         cursor.execute(query)
         rows = cursor.fetchall()
 
-        cursor.close()
+        for row in rows:
+            for key, value in row.items():
+                if isinstance(value, datetime.datetime):  # Check if value is a datetime object
+                    row[key] = value.isoformat()  # Convert to ISO format string
 
+        cursor.close()
         return rows
 
 
@@ -55,3 +64,4 @@ def connect():
         print(f"Error while connecting to MySQL: {e}")
 
     return db_connection
+

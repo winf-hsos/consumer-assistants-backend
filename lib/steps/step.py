@@ -3,9 +3,14 @@ from lib.llm import get_llm
 from lib.config import configure
 from lib.steps.step_function_interface import execute_query_select
 import chevron
+from datetime import datetime
 from icecream import ic
 def create_step(step_definition):
-    """Factory function to create a step instance based on the step definition."""
+    """Factory function to create a step instance based on the step definition.
+    Args:
+        step_definition (dict): The step definition from the YAML file.
+        agent (Agent): The agent instance to which the step belongs.
+    """
     step_type = step_definition.get("type")
     if step_type == "decision_prompt":
         return DecisionPromptStep(step_definition)
@@ -13,8 +18,14 @@ def create_step(step_definition):
         return ListFromPromptStep(step_definition)
     elif step_type == "prompt":
         return PromptStep(step_definition)
+    elif step_type == "string_from_prompt":
+        return StringFromPromptStep(step_definition)
     elif step_type == "query_sql":
         return QuerySQLStep(step_definition)
+    elif step_type == "run_expert":
+        return RunExpertStep(step_definition)
+    elif step_type == "summarize_expert_responses":
+        return SummarizeExpertReponsesStep(step_definition)
     else:
         raise ValueError(f"Unknown step type: {step_type}")
 
@@ -93,7 +104,6 @@ class PromptStep(BaseStep):
     """
     def run_prompt(self, system_prompt_id, user_prompt_id, inputs, context):
         """Execute prompt using the external LLM class."""
-
         # Get the prompt templates based on the ids
         system_prompt = self.get_prompt_template(system_prompt_id, "system")
         user_prompt = self.get_prompt_template(user_prompt_id, "user")
@@ -101,7 +111,7 @@ class PromptStep(BaseStep):
         # Resolve placeholders in the prompts
         resolved_system_prompt = chevron.render(system_prompt, inputs)
         resolved_user_prompt = chevron.render(user_prompt, inputs)
-        ic(resolved_user_prompt)
+      
         context.set_step_prompt(self.step_name, "system", resolved_system_prompt)
         context.set_step_prompt(self.step_name, "user", resolved_user_prompt)
 
@@ -109,6 +119,8 @@ class PromptStep(BaseStep):
         # Call the LLM to complete the user prompt     
         llm = get_llm()
         llm_output = llm.complete_user_prompt(resolved_system_prompt, resolved_user_prompt)
+   
+    
         return {"completion": llm_output}
     
     def get_prompt_template(self, prompt_id, prompt_type):
@@ -127,7 +139,7 @@ class DecisionPromptStep(PromptStep):
     """
     def run(self, context):
         inputs = self.resolve_inputs(self.step_definition.get("input_variables", []), context)
-
+        
         if(self.evaluate_condition(context)):
             context.log(f"Running decision prompt with inputs: {inputs}", level="DEBUG")
         else:
@@ -167,11 +179,13 @@ class DecisionPromptStep(PromptStep):
         # Store outputs back to execution context
         self.store_outputs(self.step_definition.get("output_variables", []), parsed_outputs, context=context)
 
+
 class ListFromPromptStep(PromptStep):
     """
     Executes a step that generates a list from a prompt.
     """
     def run(self, context):
+  
         inputs = self.resolve_inputs(self.step_definition.get("input_variables", []), context)
 
         if(self.evaluate_condition(context)):
@@ -179,7 +193,7 @@ class ListFromPromptStep(PromptStep):
         else:
             context.log(f"Skipping decision prompt due to unmet condition >{self.step_definition.get('if')}<", level="DEBUG")
             return
-
+     
         prompt_templates = self.step_definition.get("prompt_templates", {})
         # Run the prompt logic
         outputs = self.run_prompt(
@@ -189,9 +203,10 @@ class ListFromPromptStep(PromptStep):
             context=context
         )
         
-        ic(outputs)
+      
         # For this step, parse output into a list (simulate)
-        outputs["list_items"] = ["expert_1", "expert_2", "expert_3"]  # Placeholder example
+        items = outputs.get("completion", "").split("\n")
+        outputs["list_items"] = items  # Placeholder example
 
         # Store outputs back to execution context
         self.store_outputs(self.step_definition.get("output_variables", []), outputs, context)
@@ -202,7 +217,7 @@ class StringFromPromptStep(PromptStep):
     """
     def run(self, context):
         inputs = self.resolve_inputs(self.step_definition.get("input_variables", []), context)
-
+   
         if(self.evaluate_condition(context)):
             context.log(f"Running decision prompt with inputs: {inputs}", level="DEBUG")
         else:
@@ -218,32 +233,82 @@ class StringFromPromptStep(PromptStep):
             inputs=inputs,
             context=context
         )
-        outputs["string"] = outputs.get("completion")
-        # For this step, parse output into a string (simulate)
+     
+        completion = outputs.get("completion")
+        output = {"string" : str(completion)}  # Placeholder example
+        
         
 
         # Store outputs back to execution context
-        self.store_outputs(self.step_definition.get("output_variables", []), outputs, context)
+        self.store_outputs(self.step_definition.get("output_variables", []), output, context)
 
-class FunctionCallStep(BaseStep):
-    """
-    Executes a function .
-    """
-    def run_function(self, function_to_call, input):
-        if function_to_call == "execute_sql_query":
-            result = execute_query_select(input)
-            return {"query_results" : str(result)}
-        
-        
 
-class QuerySQLStep(FunctionCallStep):
+class RunExpertStep(BaseStep):
+    # self.agents sind bereits bekannt im ExecutionContext (context), dann agent.responsed(context) aufrufen 
+    def _format_orchestrator_message_to_input(self, message):
+        '''Format message from orchestrator to input for expert-agent'''
+        #TODO: Check if role user or system
+        return {"message": message, "role": "user", "timestamp": datetime.now().isoformat()}
     def run(self, context):
         inputs = self.resolve_inputs(self.step_definition.get("input_variables", []), context)
+        if(self.evaluate_condition(context)):
+            context.log(f"Running decision prompt with inputs: {inputs}", level="DEBUG")
+        else:
+            context.log(f"Skipping decision prompt due to unmet condition >{self.step_definition.get('if')}<", level="DEBUG")
+            return
+        expert_names = inputs.get("experts")
+        orchestrator_message = inputs.get("message")
+        input_message = self._format_orchestrator_message_to_input(orchestrator_message)
+        if not isinstance(expert_names, list):
+            # TODO: Errorhandling
+            raise ValueError("Experts must be a list")
+        responses = []
+
+        for expert_name in expert_names:
+            context.log(f"Running expert: {expert_name}", level="DEBUG")
+            new_agent = context.agent.get_subagent_by_name(expert_name)
+            # context is hand over if the agent is a subagent. So it has access to previous information
+            response = new_agent.respond(input_message, context.user)
+            responses.append(response)
+        # Store outputs back to execution context
+        responses = responses[0] # TODO: IMPLEMENT SUMMARIZATION LOGIC
+        output = {"answers": responses}
+
+        self.store_outputs(self.step_definition.get("output_variables", []), output, context)
+
+class SummarizeExpertReponsesStep(PromptStep):
+    def run(self, context):
+        inputs = self.resolve_inputs(self.step_definition.get("input_variables", []), context)
+        responses = inputs.get("responses")
+
+        if not isinstance(responses, list):
+            raise ValueError("Responses must be a list")
+        if len(responses) == 0:
+            raise ValueError("No responses to summarize")
+        if len(responses) == 1:
+            summary = responses[0]
+        else:
+            # TODO: Implement summarization logic
+            context.log("Summarization logic not implemented yet", level="WARNING")
+            summary = " ".join(responses)
+        # Store outputs back to execution context
+        self.store_outputs(self.step_definition.get("output_variables", []), {"summary": summary}, context)
+
+class QuerySQLStep(BaseStep):
+
+    def _eval_query(self, query:str):
+        pass
+
+    def run(self, context):
+        inputs = self.resolve_inputs(self.step_definition.get("input_variables", []), context)
+
         if(self.evaluate_condition(context)):
             context.log(f"Running function call with inputs: {inputs}", level="DEBUG")
         else:
             context.log(f"Skipping function call due to unmet condition >{self.step_definition.get('if')}<", level="DEBUG")
             return
-        function_to_call = "execute_sql_query"
-        outputs = self.run_function(function_to_call, inputs.get("query"))
-        self.store_outputs(self.step_definition.get("output_variables", []), outputs, context)
+        
+        rows = execute_query_select(inputs.get("sql_query"))
+        output = {"query_results" : rows}
+
+        self.store_outputs(self.step_definition.get("output_variables", []), output, context)

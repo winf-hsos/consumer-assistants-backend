@@ -7,3 +7,9 @@
 - Added Step Class "FunctionCallStep(BaseStep)" and "QuerySQLStep(FunctionCallStep)"
 - Added file step_function_interface.py as a wrapper for all functions that will be executed in a step
 - enhanced product_agent.yaml -> still clueless how to implement it in step logic
+
+## 12.02.2024
+- Implemented Product Agent. First end-to-end version now available
+- Added SQL Step
+- Added multiple prompt templates
+- renamed mysql.py to sql.py to avoid module errors (original module is called mysql)
