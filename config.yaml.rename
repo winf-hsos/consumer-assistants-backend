@@ -12,6 +12,8 @@ data:
   system_prompt_templates_path: data/prompt_templates/system_prompt_templates
 
 llm:
+  provider: "openai"
+  model: "gpt-4o-mini"
   openai_api_key: <set-your-openai-api-key-here>
 
 connections:

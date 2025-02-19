@@ -17,3 +17,6 @@ harmonized? Maybe both are needed
 - [ ] 13. Check mysql datetime return: Error when save as json. Maybe parse dict to json string. 
 - [ ] 14. Implement User Preference Agent
 - [ ] 15. Add Image Support
+- [ ] 16. Make openai api key general key for provider in config
+- [ ] 17. Make sure SQL results are limited to a useful number of rows (see 11)
+- [ ] 18. Return useful messages in case of errors
