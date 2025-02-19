@@ -12,37 +12,41 @@
     body {
       background: #f0f2f5;
     }
-    .chat-container {
-      max-width: 600px;
-      margin: 50px auto;
-      border: none;
-      border-radius: 10px;
+    /* Linke Sidebar */
+    .sidebar {
+      height: 100vh;
+      border-right: 1px solid #dee2e6;
+      padding: 1rem;
       background: #fff;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    /* Chatbereich */
+    .chat-container {
       display: flex;
       flex-direction: column;
-      height: 80vh;
-      overflow: hidden;
+      height: 100vh;
     }
     .chat-messages {
       flex: 1;
       padding: 20px;
       overflow-y: auto;
+      background: #fff;
     }
     .chat-input {
       border-top: 1px solid #dee2e6;
       padding: 10px 20px;
+      background: #f8f9fa;
     }
+    /* Chatnachrichten – Benutzer links, Chatbot rechts */
     .message {
       margin-bottom: 15px;
       display: flex;
       flex-direction: column;
     }
     .message.user {
-      align-items: flex-end;
+      align-items: flex-start;
     }
     .message.assistant {
-      align-items: flex-start;
+      align-items: flex-end;
     }
     .message .message-text {
       max-width: 70%;
@@ -53,31 +57,76 @@
       word-wrap: break-word;
     }
     .message.user .message-text {
-      background: #007bff;
-      color: #fff;
-      border-bottom-right-radius: 0;
-    }
-    .message.assistant .message-text {
       background: #e9ecef;
       color: #333;
       border-bottom-left-radius: 0;
+    }
+    .message.assistant .message-text {
+      background: #009ee3;
+      color: #fff;
+      border-bottom-right-radius: 0;
     }
     .timestamp {
       font-size: 0.75rem;
       color: #888;
       margin-top: 5px;
     }
+    /* Dezenter Reset-Button */
+    #resetButton {
+      font-size: 0.9rem;
+      padding: 0;
+      background: none;
+      border: none;
+    }
+    /* Anpassung der Farben */
+    .btn-primary {
+      background-color: #009ee3;
+      border-color: #009ee3;
+    }
+    .btn-primary:hover {
+      background-color: #0082c2;
+      border-color: #0082c2;
+    }
+    .form-select:focus {
+      border-color: #009ee3;
+      box-shadow: 0 0 0 0.25rem rgba(0, 158, 227, 0.25);
+    }
+    .form-select option:checked {
+      background-color: #009ee3;
+      color: #fff;
+    }
   </style>
 </head>
 <body>
-  <div class="chat-container">
-    <div id="chatMessages" class="chat-messages">
-      <!-- Chathistorie wird hier angezeigt -->
-    </div>
-    <div class="chat-input">
-      <div class="input-group">
-        <input type="text" id="userInput" class="form-control" placeholder="Schreibe eine Nachricht…" aria-label="Nachricht eingeben…" />
-        <button id="sendButton" class="btn btn-primary">Senden</button>
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Linke Seite: Dropdowns und Reset-Link -->
+      <div class="col-md-3 sidebar">
+        <div class="mb-3">
+          <select id="userSelect" class="form-select" aria-label="Benutzer auswählen">
+            <!-- Benutzer werden hier dynamisch eingefügt -->
+          </select>
+        </div>
+        <div class="mb-3">
+          <select id="conversationSelect" class="form-select" aria-label="Konversation auswählen">
+            <!-- Konversationen werden hier dynamisch eingefügt -->
+          </select>
+        </div>
+        <div>
+          <button id="resetButton" class="btn btn-link text-muted">Gespräch zurücksetzen</button>
+        </div>
+      </div>
+      <!-- Rechter Bereich: Chat -->
+      <div class="col-md-9 chat-container p-0">
+        <div id="chatMessages" class="chat-messages">
+          <!-- Chathistorie erscheint hier -->
+        </div>
+        <div class="chat-input">
+          <div class="input-group">
+            <input type="text" id="userInput" class="form-control" placeholder="Schreibe eine Nachricht…" aria-label="Nachricht eingeben…" />
+            <button id="sendButton" class="btn btn-primary">Senden</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -85,10 +134,23 @@
   <!-- Bootstrap Bundle with Popper -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    /***** Konfiguration *****/
+    const environment = "dev"; // "dev" oder "test"
+    const baseURL = environment === "dev"
+      ? "http://localhost:5000/"
+      : "https://nmeseth.pythonanywhere.com/";
+
+    // Lokale Variablen + DOM-Elemente
+    let currentUser = "";
+    let currentConversation = "";
+    const userSelectElem = document.getElementById('userSelect');
+    const conversationSelectElem = document.getElementById('conversationSelect');
     const chatMessages = document.getElementById('chatMessages');
     const userInput = document.getElementById('userInput');
     const sendButton = document.getElementById('sendButton');
+    const resetButton = document.getElementById('resetButton');
 
+    /***** Hilfsfunktionen *****/
     // Berechnet relative Zeit (z.B. "vor 3 Sekunden")
     function timeAgo(timestamp) {
       const then = new Date(timestamp);
@@ -112,26 +174,38 @@
     // Aktualisiert den Chatbereich mit der gesamten Chathistorie
     function refreshChatHistory(data) {
       chatMessages.innerHTML = "";
-      data.lines.forEach((line) => {
-        const messageWrapper = document.createElement("div");
-        messageWrapper.classList.add("message", line.role === "user" ? "user" : "assistant");
+      if (!data.lines || data.lines.length === 0) {
+        // Zeige "Beginne die Konversation" Nachricht, falls keine Nachrichten vorhanden sind
+        const bubble = document.createElement("div");
+        bubble.classList.add("message", "assistant");
+        const bubbleText = document.createElement("div");
+        bubbleText.classList.add("message-text");
+        bubbleText.innerHTML = "<em>Beginne die Konversation</em>";
+        bubble.appendChild(bubbleText);
+        chatMessages.appendChild(bubble);
+      } else {
+        data.lines.forEach((line) => {
+          const messageWrapper = document.createElement("div");
+          // Benutzer-Nachricht immer links, Chatbot (assistant) immer rechts
+          messageWrapper.classList.add("message", line.role === "user" ? "user" : "assistant");
 
-        const messageText = document.createElement("div");
-        messageText.classList.add("message-text");
-        if (line.role === "assistant") {
-          messageText.innerHTML = marked.parse(line.message);
-        } else {
-          messageText.textContent = line.message;
-        }
+          const messageText = document.createElement("div");
+          messageText.classList.add("message-text");
+          if (line.role === "assistant") {
+            messageText.innerHTML = marked.parse(line.message);
+          } else {
+            messageText.textContent = line.message;
+          }
 
-        const timestampElem = document.createElement("div");
-        timestampElem.classList.add("timestamp");
-        timestampElem.textContent = timeAgo(line.timestamp);
+          const timestampElem = document.createElement("div");
+          timestampElem.classList.add("timestamp");
+          timestampElem.textContent = timeAgo(line.timestamp);
 
-        messageWrapper.appendChild(messageText);
-        messageWrapper.appendChild(timestampElem);
-        chatMessages.appendChild(messageWrapper);
-      });
+          messageWrapper.appendChild(messageText);
+          messageWrapper.appendChild(timestampElem);
+          chatMessages.appendChild(messageWrapper);
+        });
+      }
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
@@ -157,18 +231,16 @@
       return messageText;
     }
 
-    // Lädt zu Beginn der Anwendung die gesamte Chathistorie per GET-Request
+    /***** Chatfunktionen *****/
+    // Lädt die Chathistorie für den aktuellen User und Conversation
     async function loadChatHistory() {
+      if (!currentUser || !currentConversation) return;
       try {
-        const response = await fetch("http://localhost:5000/conversation/nmeseth/001", {
+        const response = await fetch(`${baseURL}conversation/${currentUser}/${currentConversation}`, {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json"
-          }
+          headers: { "Content-Type": "application/json" }
         });
-        if (!response.ok) {
-          throw new Error("Netzwerkantwort war nicht ok");
-        }
+        if (!response.ok) throw new Error("Netzwerkantwort war nicht ok");
         const data = await response.json();
         refreshChatHistory(data);
       } catch (error) {
@@ -181,7 +253,7 @@
       const messageContent = userInput.value.trim();
       if (!messageContent) return;
 
-      // Zeige die Benutzer-Nachricht an (vorläufig)
+      // Zeige die Benutzer-Nachricht vorläufig an (immer links)
       const userMsgWrapper = document.createElement("div");
       userMsgWrapper.classList.add("message", "user");
       const userMsgText = document.createElement("div");
@@ -193,7 +265,7 @@
 
       userInput.value = "";
 
-      // Ladeanzeige einfügen
+      // Zeige den Spinner
       const loadingElem = appendLoadingMessage();
 
       const payload = {
@@ -204,18 +276,13 @@
       };
 
       try {
-        const response = await fetch("http://localhost:5000/chat/nmeseth/001", {
+        const response = await fetch(`${baseURL}chat/${currentUser}/${currentConversation}`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        if (!response.ok) {
-          throw new Error("Netzwerkantwort war nicht ok");
-        }
+        if (!response.ok) throw new Error("Netzwerkantwort war nicht ok");
         const data = await response.json();
-        // Aktualisiere die Chathistorie komplett
         refreshChatHistory(data);
       } catch (error) {
         console.error("Fehler beim Senden der Nachricht:", error);
@@ -223,16 +290,115 @@
       }
     }
 
-    // Event-Listener für den Senden-Button und Enter-Taste
-    sendButton.addEventListener("click", sendMessage);
-    userInput.addEventListener("keyup", (event) => {
-      if (event.key === "Enter") {
-        sendMessage();
+    /***** Benutzer- und Konversationsauswahl *****/
+    // Lädt die Liste der Benutzer
+    async function loadUsers() {
+      try {
+        const response = await fetch(`${baseURL}users`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" }
+        });
+        if (!response.ok) throw new Error("Netzwerkantwort war nicht ok");
+        const data = await response.json();
+        populateUserSelect(data.users);
+      } catch (error) {
+        console.error("Fehler beim Laden der Benutzer:", error);
       }
+    }
+
+    // Füllt das Benutzer-Dropdown und wählt standardmäßig den zuletzt gewählten (oder den ersten)
+    function populateUserSelect(users) {
+      userSelectElem.innerHTML = "";
+      users.forEach(user => {
+        const option = document.createElement("option");
+        option.value = user;
+        option.textContent = user;
+        userSelectElem.appendChild(option);
+      });
+      // Verwende den zuletzt gewählten Benutzer (falls vorhanden)
+      const storedUser = localStorage.getItem("selectedUser");
+      if (storedUser && users.includes(storedUser)) {
+        userSelectElem.value = storedUser;
+      } else {
+        userSelectElem.value = users[0];
+      }
+      currentUser = userSelectElem.value;
+      localStorage.setItem("selectedUser", currentUser);
+      loadConversations(currentUser);
+    }
+
+    // Lädt die Konversationen für den ausgewählten Benutzer
+    async function loadConversations(userId) {
+      try {
+        const response = await fetch(`${baseURL}conversations/${userId}`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" }
+        });
+        if (!response.ok) throw new Error("Netzwerkantwort war nicht ok");
+        const data = await response.json();
+        populateConversationSelect(data.conversations);
+      } catch (error) {
+        console.error("Fehler beim Laden der Konversationen:", error);
+      }
+    }
+
+    // Füllt das Konversations-Dropdown und wählt standardmäßig den zuletzt gewählten (oder den ersten)
+    function populateConversationSelect(conversations) {
+      conversationSelectElem.innerHTML = "";
+      conversations.forEach(conv => {
+        const option = document.createElement("option");
+        option.value = conv;
+        option.textContent = conv;
+        conversationSelectElem.appendChild(option);
+      });
+      // Verwende den zuletzt gewählten Gespräch (falls vorhanden)
+      const storedConv = localStorage.getItem("selectedConversation");
+      if (storedConv && conversations.includes(storedConv)) {
+        conversationSelectElem.value = storedConv;
+      } else {
+        conversationSelectElem.value = conversations[0];
+      }
+      currentConversation = conversationSelectElem.value;
+      localStorage.setItem("selectedConversation", currentConversation);
+      loadChatHistory();
+    }
+
+    // Eventlistener für Dropdown-Änderungen
+    userSelectElem.addEventListener("change", () => {
+      currentUser = userSelectElem.value;
+      localStorage.setItem("selectedUser", currentUser);
+      loadConversations(currentUser);
+    });
+    conversationSelectElem.addEventListener("change", () => {
+      currentConversation = conversationSelectElem.value;
+      localStorage.setItem("selectedConversation", currentConversation);
+      loadChatHistory();
     });
 
-    // Beim Laden der Seite die Chathistorie abrufen
-    window.addEventListener("DOMContentLoaded", loadChatHistory);
+    /***** Gespräch zurücksetzen *****/
+    async function resetConversation() {
+      if (!currentUser || !currentConversation) return;
+      try {
+        const response = await fetch(`${baseURL}reset_conversation/${currentUser}/${currentConversation}`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" }
+        });
+        if (!response.ok) throw new Error("Netzwerkantwort war nicht ok");
+        loadChatHistory();
+      } catch (error) {
+        console.error("Fehler beim Zurücksetzen der Konversation:", error);
+      }
+    }
+
+    /***** Event-Listener *****/
+    sendButton.addEventListener("click", sendMessage);
+    userInput.addEventListener("keyup", (event) => {
+      if (event.key === "Enter") sendMessage();
+    });
+    resetButton.addEventListener("click", resetConversation);
+
+    // Initialer Aufruf: Lade die Benutzerliste (daraus folgen Dropdown für Konversation und Chat)
+    window.addEventListener("DOMContentLoaded", loadUsers);
   </script>
 </body>
 </html>

@@ -1,11 +1,11 @@
 from flask import Flask, request, jsonify
-from api import chat as chat_api, list_conversations_for_user, reset_conversation as reset_conversation_api, get_conversation as get_conversation_api
+from api import chat as chat_api, list_conversations_for_user, reset_conversation as reset_conversation_api, get_conversation as get_conversation_api, list_user_ids
 
 app = Flask(__name__)
 from flask_cors import CORS
 CORS(app)
 
-@app.route('/reset_conversation/<user_id>/<conversation_id>', methods=['POST'])
+@app.route('/reset_conversation/<user_id>/<conversation_id>', methods=['GET'])
 def reset_conversation(user_id, conversation_id):
     try:
         if not user_id:
@@ -45,6 +45,16 @@ def conversation(user_id, conversation_id):
         conversation = get_conversation_api(user_id, conversation_id)
         
         return conversation.to_json(), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/users', methods=['GET'])
+def users():
+    try:
+        # Call the api module to list the user IDs
+        user_ids = list_user_ids()
+        
+        return jsonify({"users": user_ids}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
