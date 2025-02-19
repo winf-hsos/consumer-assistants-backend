@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify
-from api import chat as chat_api, list_conversations_for_user, reset_conversation as reset_conversation_api
+from api import chat as chat_api, list_conversations_for_user, reset_conversation as reset_conversation_api, get_conversation as get_conversation_api
 
 app = Flask(__name__)
+from flask_cors import CORS
+CORS(app)
 
 @app.route('/reset_conversation/<user_id>/<conversation_id>', methods=['POST'])
 def reset_conversation(user_id, conversation_id):
@@ -31,6 +33,21 @@ def conversations(user_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/conversation/<user_id>/<conversation_id>', methods=['GET'])
+def conversation(user_id, conversation_id):
+    try:
+        if not user_id:
+            return jsonify({"error": "User ID is required"}), 400
+        if not conversation_id:
+            return jsonify({"error": "Conversation ID is required"}), 400
+        
+        # Call the api module to get the conversation
+        conversation = get_conversation_api(user_id, conversation_id)
+        
+        return conversation.to_json(), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/chat/<user_id>/<conversation_id>', methods=['POST'])
 def chat(user_id, conversation_id):
     try:
@@ -50,9 +67,10 @@ def chat(user_id, conversation_id):
         # For demonstration purposes, echo back the message
         #response_message = f"You said: {user_message}"
 
-        chat_response = chat_api(user_id, conversation_id, user_message.get("content"))
-        
-        return jsonify({"response": chat_response}), 200
+        conversation = chat_api(user_id, conversation_id, user_message.get("content"))
+
+        return conversation.to_json(), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

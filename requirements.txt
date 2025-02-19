@@ -4,5 +4,6 @@ mysql-connector-python
 chevron
 pyyaml
 flask
+flask-cors
 streamlit
 icecream

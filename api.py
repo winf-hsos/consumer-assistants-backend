@@ -50,6 +50,6 @@ def chat(user_id, conversation_id, user_message):
 
     # Read the content from the conversations.json file
     conversation = get_conversation(user_id, conversation_id)
-    response = conversation.continue_conversation(user_message)
+    conversation.continue_conversation(user_message)
 
-    return response.get("message")
+    return conversation

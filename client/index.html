@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Moderner Chat</title>
+  <!-- Bootstrap CSS (Version 5) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Marked Library für Markdown-Rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    body {
+      background: #f0f2f5;
+    }
+    .chat-container {
+      max-width: 600px;
+      margin: 50px auto;
+      border: none;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      height: 80vh;
+      overflow: hidden;
+    }
+    .chat-messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .chat-input {
+      border-top: 1px solid #dee2e6;
+      padding: 10px 20px;
+    }
+    .message {
+      margin-bottom: 15px;
+      display: flex;
+      flex-direction: column;
+    }
+    .message.user {
+      align-items: flex-end;
+    }
+    .message.assistant {
+      align-items: flex-start;
+    }
+    .message .message-text {
+      max-width: 70%;
+      padding: 10px 15px;
+      border-radius: 15px;
+      font-size: 1rem;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+    .message.user .message-text {
+      background: #007bff;
+      color: #fff;
+      border-bottom-right-radius: 0;
+    }
+    .message.assistant .message-text {
+      background: #e9ecef;
+      color: #333;
+      border-bottom-left-radius: 0;
+    }
+    .timestamp {
+      font-size: 0.75rem;
+      color: #888;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div id="chatMessages" class="chat-messages">
+      <!-- Chathistorie wird hier angezeigt -->
+    </div>
+    <div class="chat-input">
+      <div class="input-group">
+        <input type="text" id="userInput" class="form-control" placeholder="Schreibe eine Nachricht…" aria-label="Nachricht eingeben…" />
+        <button id="sendButton" class="btn btn-primary">Senden</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const chatMessages = document.getElementById('chatMessages');
+    const userInput = document.getElementById('userInput');
+    const sendButton = document.getElementById('sendButton');
+
+    // Berechnet relative Zeit (z.B. "vor 3 Sekunden")
+    function timeAgo(timestamp) {
+      const then = new Date(timestamp);
+      const now = new Date();
+      const seconds = Math.floor((now - then) / 1000);
+      if (seconds < 60) {
+        return seconds === 1 ? "vor 1 Sekunde" : `vor ${seconds} Sekunden`;
+      }
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) {
+        return minutes === 1 ? "vor 1 Minute" : `vor ${minutes} Minuten`;
+      }
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) {
+        return hours === 1 ? "vor 1 Stunde" : `vor ${hours} Stunden`;
+      }
+      const days = Math.floor(hours / 24);
+      return days === 1 ? "vor 1 Tag" : `vor ${days} Tagen`;
+    }
+
+    // Aktualisiert den Chatbereich mit der gesamten Chathistorie
+    function refreshChatHistory(data) {
+      chatMessages.innerHTML = "";
+      data.lines.forEach((line) => {
+        const messageWrapper = document.createElement("div");
+        messageWrapper.classList.add("message", line.role === "user" ? "user" : "assistant");
+
+        const messageText = document.createElement("div");
+        messageText.classList.add("message-text");
+        if (line.role === "assistant") {
+          messageText.innerHTML = marked.parse(line.message);
+        } else {
+          messageText.textContent = line.message;
+        }
+
+        const timestampElem = document.createElement("div");
+        timestampElem.classList.add("timestamp");
+        timestampElem.textContent = timeAgo(line.timestamp);
+
+        messageWrapper.appendChild(messageText);
+        messageWrapper.appendChild(timestampElem);
+        chatMessages.appendChild(messageWrapper);
+      });
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Zeigt einen Spinner für die Ladeanzeige an und gibt das Element zurück
+    function appendLoadingMessage() {
+      const messageWrapper = document.createElement("div");
+      messageWrapper.classList.add("message", "assistant");
+
+      const messageText = document.createElement("div");
+      messageText.classList.add("message-text");
+      messageText.innerHTML = `
+        <div class="d-flex align-items-center">
+          <div class="spinner-border text-secondary me-2" role="status">
+            <span class="visually-hidden">Lade...</span>
+          </div>
+          <span>Antwort wird geladen...</span>
+        </div>
+      `;
+
+      messageWrapper.appendChild(messageText);
+      chatMessages.appendChild(messageWrapper);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      return messageText;
+    }
+
+    // Lädt zu Beginn der Anwendung die gesamte Chathistorie per GET-Request
+    async function loadChatHistory() {
+      try {
+        const response = await fetch("http://localhost:5000/conversation/nmeseth/001", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+        if (!response.ok) {
+          throw new Error("Netzwerkantwort war nicht ok");
+        }
+        const data = await response.json();
+        refreshChatHistory(data);
+      } catch (error) {
+        console.error("Fehler beim Laden der Chathistorie:", error);
+      }
+    }
+
+    // Sendet eine Nachricht an den Server (POST) und lädt die aktualisierte Chathistorie
+    async function sendMessage() {
+      const messageContent = userInput.value.trim();
+      if (!messageContent) return;
+
+      // Zeige die Benutzer-Nachricht an (vorläufig)
+      const userMsgWrapper = document.createElement("div");
+      userMsgWrapper.classList.add("message", "user");
+      const userMsgText = document.createElement("div");
+      userMsgText.classList.add("message-text");
+      userMsgText.textContent = messageContent;
+      userMsgWrapper.appendChild(userMsgText);
+      chatMessages.appendChild(userMsgWrapper);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+
+      userInput.value = "";
+
+      // Ladeanzeige einfügen
+      const loadingElem = appendLoadingMessage();
+
+      const payload = {
+        message: {
+          role: "user",
+          content: messageContent,
+        },
+      };
+
+      try {
+        const response = await fetch("http://localhost:5000/chat/nmeseth/001", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+          throw new Error("Netzwerkantwort war nicht ok");
+        }
+        const data = await response.json();
+        // Aktualisiere die Chathistorie komplett
+        refreshChatHistory(data);
+      } catch (error) {
+        console.error("Fehler beim Senden der Nachricht:", error);
+        loadingElem.innerHTML = `<em>Fehler beim Senden der Nachricht.</em>`;
+      }
+    }
+
+    // Event-Listener für den Senden-Button und Enter-Taste
+    sendButton.addEventListener("click", sendMessage);
+    userInput.addEventListener("keyup", (event) => {
+      if (event.key === "Enter") {
+        sendMessage();
+      }
+    });
+
+    // Beim Laden der Seite die Chathistorie abrufen
+    window.addEventListener("DOMContentLoaded", loadChatHistory);
+  </script>
+</body>
+</html>
