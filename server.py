@@ -31,7 +31,7 @@ def conversations(user_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/chat/<conversation_id>', methods=['POST'])
+@app.route('/chat/<user_id>/<conversation_id>', methods=['POST'])
 def chat(user_id, conversation_id):
     try:
         if not user_id:
