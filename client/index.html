@@ -12,14 +12,7 @@
     body {
       background: #f0f2f5;
     }
-    /* Linke Sidebar */
-    .sidebar {
-      height: 100vh;
-      border-right: 1px solid #dee2e6;
-      padding: 1rem;
-      background: #fff;
-    }
-    /* Chatbereich */
+    /* Chatcontainer */
     .chat-container {
       display: flex;
       flex-direction: column;
@@ -36,17 +29,17 @@
       padding: 10px 20px;
       background: #f8f9fa;
     }
-    /* Chatnachrichten – Benutzer links, Chatbot rechts */
+    /* Chatnachrichten: User-Nachrichten rechts, Assistent-Nachrichten links */
     .message {
       margin-bottom: 15px;
       display: flex;
       flex-direction: column;
     }
     .message.user {
-      align-items: flex-start;
+      align-items: flex-end;
     }
     .message.assistant {
-      align-items: flex-end;
+      align-items: flex-start;
     }
     .message .message-text {
       max-width: 70%;
@@ -56,11 +49,13 @@
       line-height: 1.5;
       word-wrap: break-word;
     }
+    /* User-Blasen (hell) */
     .message.user .message-text {
       background: #e9ecef;
       color: #333;
       border-bottom-left-radius: 0;
     }
+    /* Assistent-Blasen: links mit #009ee3 */
     .message.assistant .message-text {
       background: #009ee3;
       color: #fff;
@@ -71,14 +66,7 @@
       color: #888;
       margin-top: 5px;
     }
-    /* Dezenter Reset-Button */
-    #resetButton {
-      font-size: 0.9rem;
-      padding: 0;
-      background: none;
-      border: none;
-    }
-    /* Anpassung der Farben */
+    /* Button "Senden" in #009ee3 */
     .btn-primary {
       background-color: #009ee3;
       border-color: #009ee3;
@@ -87,46 +75,91 @@
       background-color: #0082c2;
       border-color: #0082c2;
     }
+    /* Dezenter Reset-Link */
+    #resetButton {
+      font-size: 0.9rem;
+      padding: 0;
+      background: none;
+      border: none;
+    }
+    /* Offcanvas (Auswahlbereich) – Standardmäßig versteckt auf mobilen Geräten */
+    /* Auf mobilen Geräten erscheint er über das Burger-Menü; auf Desktop wird er als feste Sidebar angezeigt */
+    @media (min-width: 768px) {
+      #offcanvasMenu {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 300px;
+        height: 100vh;
+        visibility: visible !important;
+        transform: none !important;
+        transition: none;
+        border-right: 1px solid #dee2e6;
+      }
+      /* Damit der Chatbereich nicht vom Sidebar überdeckt wird */
+      #chatContainer {
+        margin-left: 300px;
+      }
+      /* Das mobile Navbar (Burger) ausblenden */
+      .d-md-none {
+        display: none !important;
+      }
+    }
+    /* Spinner-Anpassung: Weißer Spinner */
+    .spinner-border.text-white {
+      color: #fff !important;
+    }
+    /* Dropdown-Fokus in #009ee3 */
     .form-select:focus {
       border-color: #009ee3;
       box-shadow: 0 0 0 0.25rem rgba(0, 158, 227, 0.25);
     }
-    .form-select option:checked {
-      background-color: #009ee3;
-      color: #fff;
-    }
   </style>
 </head>
 <body>
-  <div class="container-fluid">
-    <div class="row">
-      <!-- Linke Seite: Dropdowns und Reset-Link -->
-      <div class="col-md-3 sidebar">
-        <div class="mb-3">
-          <select id="userSelect" class="form-select" aria-label="Benutzer auswählen">
-            <!-- Benutzer werden hier dynamisch eingefügt -->
-          </select>
-        </div>
-        <div class="mb-3">
-          <select id="conversationSelect" class="form-select" aria-label="Konversation auswählen">
-            <!-- Konversationen werden hier dynamisch eingefügt -->
-          </select>
-        </div>
-        <div>
-          <button id="resetButton" class="btn btn-link text-muted">Gespräch zurücksetzen</button>
-        </div>
+  <!-- Navbar für mobile Geräte (Burger-Menü) -->
+  <nav class="navbar navbar-light bg-light d-md-none">
+    <div class="container-fluid">
+      <button class="btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <span class="navbar-brand mb-0 h1">InVerBio Virtueller Assistent</span>
+    </div>
+  </nav>
+
+  <!-- Offcanvas für Auswahl (User & Conversation) -->
+  <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasMenu" aria-labelledby="offcanvasMenuLabel">
+    <!-- Header nur für mobile Geräte -->
+    <div class="offcanvas-header d-md-none">
+      <h5 class="offcanvas-title" id="offcanvasMenuLabel">Einstellungen</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <div class="mb-3">
+        <select id="userSelect" class="form-select" aria-label="Benutzer auswählen">
+          <!-- Dynamisch befüllt -->
+        </select>
       </div>
-      <!-- Rechter Bereich: Chat -->
-      <div class="col-md-9 chat-container p-0">
-        <div id="chatMessages" class="chat-messages">
-          <!-- Chathistorie erscheint hier -->
-        </div>
-        <div class="chat-input">
-          <div class="input-group">
-            <input type="text" id="userInput" class="form-control" placeholder="Schreibe eine Nachricht…" aria-label="Nachricht eingeben…" />
-            <button id="sendButton" class="btn btn-primary">Senden</button>
-          </div>
-        </div>
+      <div class="mb-3">
+        <select id="conversationSelect" class="form-select" aria-label="Konversation auswählen">
+          <!-- Dynamisch befüllt -->
+        </select>
+      </div>
+      <div>
+        <button id="resetButton" class="btn btn-link text-muted">Gespräch zurücksetzen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chatbereich -->
+  <div id="chatContainer" class="chat-container">
+    <div id="chatMessages" class="chat-messages">
+      <!-- Chathistorie erscheint hier -->
+    </div>
+    <div class="chat-input">
+      <div class="input-group">
+        <input type="text" id="userInput" class="form-control" placeholder="Schreibe eine Nachricht…" aria-label="Nachricht eingeben…" />
+        <button id="sendButton" class="btn btn-primary">Senden</button>
       </div>
     </div>
   </div>
@@ -175,7 +208,7 @@
     function refreshChatHistory(data) {
       chatMessages.innerHTML = "";
       if (!data.lines || data.lines.length === 0) {
-        // Zeige "Beginne die Konversation" Nachricht, falls keine Nachrichten vorhanden sind
+        // Falls keine Nachrichten vorhanden sind, zeige "Beginne die Konversation"
         const bubble = document.createElement("div");
         bubble.classList.add("message", "assistant");
         const bubbleText = document.createElement("div");
@@ -186,9 +219,8 @@
       } else {
         data.lines.forEach((line) => {
           const messageWrapper = document.createElement("div");
-          // Benutzer-Nachricht immer links, Chatbot (assistant) immer rechts
+          // User-Nachricht: rechts; Assistent-Nachricht: links
           messageWrapper.classList.add("message", line.role === "user" ? "user" : "assistant");
-
           const messageText = document.createElement("div");
           messageText.classList.add("message-text");
           if (line.role === "assistant") {
@@ -196,11 +228,9 @@
           } else {
             messageText.textContent = line.message;
           }
-
           const timestampElem = document.createElement("div");
           timestampElem.classList.add("timestamp");
           timestampElem.textContent = timeAgo(line.timestamp);
-
           messageWrapper.appendChild(messageText);
           messageWrapper.appendChild(timestampElem);
           chatMessages.appendChild(messageWrapper);
@@ -209,22 +239,20 @@
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    // Zeigt einen Spinner für die Ladeanzeige an und gibt das Element zurück
+    // Zeigt einen Spinner (weiß) für die Ladeanzeige an und gibt das Element zurück
     function appendLoadingMessage() {
       const messageWrapper = document.createElement("div");
       messageWrapper.classList.add("message", "assistant");
-
       const messageText = document.createElement("div");
       messageText.classList.add("message-text");
       messageText.innerHTML = `
         <div class="d-flex align-items-center">
-          <div class="spinner-border text-secondary me-2" role="status">
+          <div class="spinner-border text-white me-2" role="status">
             <span class="visually-hidden">Lade...</span>
           </div>
           <span>Antwort wird geladen...</span>
         </div>
       `;
-
       messageWrapper.appendChild(messageText);
       chatMessages.appendChild(messageWrapper);
       chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -232,7 +260,7 @@
     }
 
     /***** Chatfunktionen *****/
-    // Lädt die Chathistorie für den aktuellen User und Conversation
+    // Lädt die Chathistorie für den aktuellen User und die aktuelle Conversation
     async function loadChatHistory() {
       if (!currentUser || !currentConversation) return;
       try {
@@ -248,12 +276,11 @@
       }
     }
 
-    // Sendet eine Nachricht an den Server (POST) und lädt die aktualisierte Chathistorie
+    // Sendet eine Nachricht (POST) und lädt anschließend die aktualisierte Chathistorie
     async function sendMessage() {
       const messageContent = userInput.value.trim();
       if (!messageContent) return;
-
-      // Zeige die Benutzer-Nachricht vorläufig an (immer links)
+      // Zeige die User-Nachricht (rechts) vorläufig an
       const userMsgWrapper = document.createElement("div");
       userMsgWrapper.classList.add("message", "user");
       const userMsgText = document.createElement("div");
@@ -262,19 +289,15 @@
       userMsgWrapper.appendChild(userMsgText);
       chatMessages.appendChild(userMsgWrapper);
       chatMessages.scrollTop = chatMessages.scrollHeight;
-
       userInput.value = "";
-
-      // Zeige den Spinner
+      // Zeige Spinner
       const loadingElem = appendLoadingMessage();
-
       const payload = {
         message: {
           role: "user",
           content: messageContent,
         },
       };
-
       try {
         const response = await fetch(`${baseURL}chat/${currentUser}/${currentConversation}`, {
           method: "POST",
@@ -305,8 +328,7 @@
         console.error("Fehler beim Laden der Benutzer:", error);
       }
     }
-
-    // Füllt das Benutzer-Dropdown und wählt standardmäßig den zuletzt gewählten (oder den ersten)
+    // Befüllt das Benutzer-Dropdown und wählt standardmäßig den zuletzt gewählten (oder den ersten)
     function populateUserSelect(users) {
       userSelectElem.innerHTML = "";
       users.forEach(user => {
@@ -315,7 +337,6 @@
         option.textContent = user;
         userSelectElem.appendChild(option);
       });
-      // Verwende den zuletzt gewählten Benutzer (falls vorhanden)
       const storedUser = localStorage.getItem("selectedUser");
       if (storedUser && users.includes(storedUser)) {
         userSelectElem.value = storedUser;
@@ -326,7 +347,6 @@
       localStorage.setItem("selectedUser", currentUser);
       loadConversations(currentUser);
     }
-
     // Lädt die Konversationen für den ausgewählten Benutzer
     async function loadConversations(userId) {
       try {
@@ -341,8 +361,7 @@
         console.error("Fehler beim Laden der Konversationen:", error);
       }
     }
-
-    // Füllt das Konversations-Dropdown und wählt standardmäßig den zuletzt gewählten (oder den ersten)
+    // Befüllt das Konversations-Dropdown und wählt standardmäßig den zuletzt gewählten (oder den ersten)
     function populateConversationSelect(conversations) {
       conversationSelectElem.innerHTML = "";
       conversations.forEach(conv => {
@@ -351,7 +370,6 @@
         option.textContent = conv;
         conversationSelectElem.appendChild(option);
       });
-      // Verwende den zuletzt gewählten Gespräch (falls vorhanden)
       const storedConv = localStorage.getItem("selectedConversation");
       if (storedConv && conversations.includes(storedConv)) {
         conversationSelectElem.value = storedConv;
@@ -362,7 +380,6 @@
       localStorage.setItem("selectedConversation", currentConversation);
       loadChatHistory();
     }
-
     // Eventlistener für Dropdown-Änderungen
     userSelectElem.addEventListener("change", () => {
       currentUser = userSelectElem.value;
@@ -397,7 +414,7 @@
     });
     resetButton.addEventListener("click", resetConversation);
 
-    // Initialer Aufruf: Lade die Benutzerliste (daraus folgen Dropdown für Konversation und Chat)
+    // Initial: Lade Benutzer (und damit auch Konversation und Chat)
     window.addEventListener("DOMContentLoaded", loadUsers);
   </script>
 </body>
