@@ -12,11 +12,11 @@ harmonized? Maybe both are needed
 - [ ] ~~8. Add parallel logic for step strategy (follow up TODO 2). This can also be a step imo.~~
 - [x] 9. Modify pricipal_agent_step 2: Add Inputs for mustache placeholer {expert_introduction}
 - [ ] 10. Manage Expert Response if multiple Experts were requested.
-- [ ] 11. Limit SQL Rows -> maybe add Loop here
+- [x] 11. Limit SQL Rows -> maybe add Loop here
 - [ ] 12. Add User Information to prompt template, especically for product agent. -> Develop ideas and approaches
-- [ ] 13. Check mysql datetime return: Error when save as json. Maybe parse dict to json string. 
+- [x] 13. Check mysql datetime return: Error when save as json. Maybe parse dict to json string. 
 - [ ] 14. Implement User Preference Agent
 - [ ] 15. Add Image Support
-- [ ] 16. Make openai api key general key for provider in config
-- [ ] 17. Make sure SQL results are limited to a useful number of rows (see 11)
+- [x] 16. Make openai api key general key for provider in config
+- [x] 17. Make sure SQL results are limited to a useful number of rows (see 11)
 - [ ] 18. Return useful messages in case of errors

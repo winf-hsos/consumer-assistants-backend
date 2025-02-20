@@ -5,13 +5,13 @@
     "lines": [
         {
             "role": "user",
-            "message": "Hallo, habt ihr Käse?",
-            "timestamp": "2025-02-12T13:55:33.065249"
+            "message": "Hallo",
+            "timestamp": "2025-02-20T10:21:26.103947"
         },
         {
             "role": "assistant",
-            "message": "Hallo! Wir freuen uns zu hören, dass Sie an unserer Käseauswahl interessiert sind. Wir haben eine große Auswahl an Käsesorten, die Sie erkunden können:\n\n1. **Bio Gouda in Scheiben** - Ein klassischer Gouda, perfekt für Sandwiches oder um ihn allein zu genießen. Preis: 3,99 €.\n\n2. **Griechischer Feta aus Schaf- und Ziegenmilch** - Dieser Feta hat eine cremige Textur und ist voller Geschmack. Er eignet sich ideal für Salate und mediterrane Gerichte. Preis: 3,49 €.\n\n3. **Mozzarella aus Kuhmilch** - Frischer Mozzarella, der großartig für Salate und Pasta-Gerichte ist. Preis: 1,49 €.\n\n4. **Camembert** - Ein köstlich milder und cremiger Käse mit einer weichen Rinde. Perfekt für Käseplatten! Preis: 2,99 €.\n\n5. **Scharfe Käthe** - Ein würziger Frischkäse, der sich hervorragend als Dip oder Aufstrich eignet. Preis: 4,19 €.\n\n6. **Frischkäse natur, Doppelrahmstufe** - Ein vielseitiger Doppelrahm-Frischkäse, perfekt als Aufstrich oder in verschiedenen Gerichten. Preis: 1,99 €.\n\n7. **Ziegenfrischkäse mit Kräutern** - Ein geschmackvoller Ziegenkäse, ideal zum Aufstreichen auf Crackern oder zum Hinzufügen zu Salaten. Preis: 3,29 €.\n\n8. **Bio Käseaufschnitt** - Eine praktische Aufschnitt-Käsemischung, perfekt für einen schnellen Snack oder ein Sandwich. Preis: 3,79 €.\n\nDas sind nur einige der Käseoptionen, die wir anbieten! Wenn Sie an einer bestimmten Käsesorte interessiert sind oder Empfehlungen für einen bestimmten Anlass benötigen, fragen Sie gerne! Genießen Sie Ihre Käseplatte oder Ihren Snack! 🧀",
-            "timestamp": "2025-02-12T13:56:11.003563"
+            "message": "Hallo! Wie läuft dein Tag bis jetzt? Planst du heute besondere Einkäufe?",
+            "timestamp": "2025-02-20T10:21:29.150832"
         }
     ]
 }

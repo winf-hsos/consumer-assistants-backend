@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import chevron
 from lib.logging import log_debug
 from lib.config import configure
-
+from icecream import ic
 USER_PROMPT_TEMPLATES_PATH = configure("data.user_prompt_templates_path")
 
 
@@ -15,7 +15,7 @@ def get_llm(provider=None, model=None):
         model = configure("llm.model")
 
     if provider == "openai":
-        api_key = configure("llm.openai_api_key")
+        api_key = configure("llm.api_key")
         llm = OpenAILLM(api_key, model)
     else:
         llm = None
@@ -47,7 +47,7 @@ class OpenAILLM(LLM):
 
     def complete_user_prompt(self, system_prompt: str, user_prompt: str) -> str:
         """Simulates OpenAI GPT-4o API call and returns the response text."""
-        
+
         try:
             response = self.client.chat.completions.create(
                 model= self.model,

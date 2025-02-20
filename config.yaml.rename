@@ -14,7 +14,7 @@ data:
 llm:
   provider: "openai"
   model: "gpt-4o-mini"
-  openai_api_key: <set-your-openai-api-key-here>
+  api_key: <set-your-openai-api-key-here>
 
 connections:
   products_db:
