@@ -16,8 +16,8 @@ class Assistant:
     def _create_agent(self, agent_id):
         self.agent = Agent(agent_id)
 
-    def respond(self, lines, user):
-        answer = self.agent.respond(lines, user)
+    def respond(self, input, user):
+        answer = self.agent.respond(input, user)
         print(f"Answer: {answer}")
         return answer
         

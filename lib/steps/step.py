@@ -2,6 +2,12 @@ from abc import ABC, abstractmethod
 from lib.llm import get_llm
 from lib.config import configure
 from lib.steps.step_function_interface import execute_query_select
+
+from typing import TYPE_CHECKING
+print("TYPE_CHECKING", TYPE_CHECKING)
+if TYPE_CHECKING:
+    from lib.steps.execution_context import ExecutionContext
+
 import chevron
 from datetime import datetime
 from icecream import ic
@@ -39,11 +45,11 @@ class BaseStep(ABC):
         self.step_name = step_definition.get("name")
 
     @abstractmethod
-    def run(self, context):
+    def run(self, context:"ExecutionContext"):
         """Run the step's logic."""
         pass
 
-    def evaluate_condition(self, context):
+    def evaluate_condition(self, context:"ExecutionContext"):
         """Evaluate the 'if' condition of a step."""
         condition = self.step_definition.get("if", None)
         if not condition:
@@ -75,7 +81,7 @@ class BaseStep(ABC):
 
         return True    
 
-    def resolve_inputs(self, input_variables, context):
+    def resolve_inputs(self, input_variables, context:"ExecutionContext"):
         """Resolve input variables using the execution context."""
         resolved_inputs = {}
         for var in input_variables:
@@ -89,7 +95,7 @@ class BaseStep(ABC):
                 context.log(f"Resolved input variable >{input_name}<: '{value}'", level="DEBUG")
         return resolved_inputs
 
-    def store_outputs(self, output_variables, outputs, context):
+    def store_outputs(self, output_variables, outputs, context:"ExecutionContext"):
         """Store step outputs into the execution context."""
         for output_var in output_variables:
             name = output_var["output_name"]
@@ -97,16 +103,76 @@ class BaseStep(ABC):
             context.set_step_output(self.step_name, name, outputs.get(source))
             context.log(f"Stored output '{name}' with value: {outputs.get(source)}", level="DEBUG")
 
+
+
 class PromptStep(BaseStep):
     """
     Base class for all prompt-based steps.
     Handles prompt resolution, execution, and output storage.
     """
-    def run_prompt(self, system_prompt_id, user_prompt_id, inputs, context):
+    def find_image_paths(self, inputs):
+        if isinstance(inputs, dict):
+            for key, value in inputs.items():
+                if key == "image_paths":
+                    return value  # Return the first occurrence of image_paths
+                result = self.find_image_paths(value)  # Recursively check nested structures
+                if result:
+                    return result
+        elif isinstance(inputs, list):
+            for item in inputs:
+                result = self.find_image_paths(item)
+                if result:
+                    return result
+        return None  # Return None if no image_paths key is found
+
+    def get_messages_from_inputs(self, inputs):
+        '''
+        Extrahiert Benutzer (role) und Nachrichten (message) aus inputs.
+        '''
+        messages = []
+        
+        if 'chat_history' in inputs and isinstance(inputs['chat_history'], list):
+            for entry in inputs['chat_history']:
+                if isinstance(entry, dict) and 'message' in entry and 'role' in entry:
+                    messages.append({
+                        "role": entry["role"],
+                        "message": entry["message"]
+                    })
+
+        return messages
+    def remove_image_paths(self, inputs):
+        """Remove all occurrences of 'image_paths' from the input dictionary."""
+        if isinstance(inputs, dict):
+            # Erstelle eine Liste der zu löschenden Schlüssel, um während der Iteration nichts zu entfernen
+            keys_to_remove = [key for key in inputs if key == "image_paths"]
+            
+            # Entferne die Schlüssel nach der Iteration
+            for key in keys_to_remove:
+                del inputs[key]
+            
+            # Rekursiver Aufruf für alle verschachtelten Werte
+            for key, value in inputs.items():
+                self.remove_image_paths(value)
+        
+        elif isinstance(inputs, list):
+            for item in inputs:
+                self.remove_image_paths(item)
+        
+        return inputs
+
+
+
+
+    def run_prompt(self, system_prompt_id, user_prompt_id, inputs, context:"ExecutionContext"):
         """Execute prompt using the external LLM class."""
         # Get the prompt templates based on the ids
         system_prompt = self.get_prompt_template(system_prompt_id, "system")
         user_prompt = self.get_prompt_template(user_prompt_id, "user")
+        
+        image_paths = context.get_image_paths()
+
+        # NOTE: Aus irgendeinem Grund hat das LLM Probleme, wenn die Pfade in der Chat History sind.
+        inputs = self.remove_image_paths(inputs)
         
         # Resolve placeholders in the prompts
         resolved_system_prompt = chevron.render(system_prompt, inputs)
@@ -115,10 +181,13 @@ class PromptStep(BaseStep):
         context.set_step_prompt(self.step_name, "system", resolved_system_prompt)
         context.set_step_prompt(self.step_name, "user", resolved_user_prompt)
 
-   
         # Call the LLM to complete the user prompt     
         llm = get_llm()
-        llm_output = llm.complete_user_prompt(resolved_system_prompt, resolved_user_prompt)
+        llm_output = llm.complete_user_prompt(
+            system_prompt=resolved_system_prompt, 
+            user_prompt=resolved_user_prompt,
+            image_paths=image_paths
+            )
    
     
         return {"completion": llm_output}
@@ -138,8 +207,10 @@ class DecisionPromptStep(PromptStep):
     Parses the completion into 'decision_code' and 'decision_text' based on YAML-defined options.
     """
     def run(self, context):
+ 
         inputs = self.resolve_inputs(self.step_definition.get("input_variables", []), context)
-        
+
+
         if(self.evaluate_condition(context)):
             context.log(f"Running decision prompt with inputs: {inputs}", level="DEBUG")
         else:
@@ -151,11 +222,14 @@ class DecisionPromptStep(PromptStep):
         # TODO: Make more robust than assuming options are in the first output variable
         options = self.step_definition.get("output_variables", [])[0].get("options", [])
         
+        #for debug only
+        from copy import deepcopy
+        inputs_copy = deepcopy(inputs)
         # Run the prompt logic
         outputs = self.run_prompt(
             system_prompt_id=prompt_templates.get("system", ""),
             user_prompt_id=prompt_templates.get("user", ""),
-            inputs=inputs,
+            inputs=inputs_copy,
             context=context
         )
 

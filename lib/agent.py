@@ -68,7 +68,7 @@ class Agent:
 
 
     def respond(self, input, user, context=None):
-
+        ic(input)
         if not context :
             context = ExecutionContext(self, input, user)
         for step in self.steps:

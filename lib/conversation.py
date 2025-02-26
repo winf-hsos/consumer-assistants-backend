@@ -49,15 +49,15 @@ class Conversation:
             "lines": self.lines
         }
     
-    def continue_conversation(self, user_message = None):
+    def continue_conversation(self, user_message = None, image_paths = None):
         if user_message:
-            message = { "role": "user", "message": user_message, "timestamp": datetime.now().isoformat() }
+            message = { "role": "user", "message": user_message, "image_paths": image_paths, "timestamp": datetime.now().isoformat() }
             self.lines.append(message)
     
         response = self.assistant.respond(self.lines, self.user)
         llm = get_llm()
         response = llm.translate(response, target_language=self.user.language)
-        message = { "role": "assistant", "message": response,"timestamp": datetime.now().isoformat()  }
+        message = { "role": "assistant", "message": response,"image_paths":None, "timestamp": datetime.now().isoformat()  }
         self.lines.append(message)
 
         save_conversation(self.to_json())

@@ -44,12 +44,13 @@ def reset_conversation(user_id, conversation_id):
     conversation = get_conversation(user_id, conversation_id)
     conversation.reset()
     
-def chat(user_id, conversation_id, user_message):
+def chat(user_id, conversation_id, user_message, image_paths=None):
+    """Continue a conversation with a user."""
 
     log_info(f"User {user_id} continues conversation {conversation_id} with new message: >{user_message}<")
 
     # Read the content from the conversations.json file
     conversation = get_conversation(user_id, conversation_id)
-    conversation.continue_conversation(user_message)
+    conversation.continue_conversation(user_message, image_paths)
 
     return conversation

@@ -15,6 +15,7 @@ class ExecutionContext:
         self.context["agents"] = {
             "introductions": self.agent.get_agents_introductions()
         }
+        self.set_image_paths(self.extract_image_paths_from_inputs())
 
         self.logs = []
         
@@ -65,7 +66,50 @@ class ExecutionContext:
         if "prompts" not in self.context[step_name]:
             self.context[step_name]["prompts"] = {}
         self.context[step_name]["prompts"][prompt_type] = prompt   
-
+    
+    
+    def extract_image_paths_from_inputs(self):
+        """Retrieve image paths from the input."""
+        inputs = self.get_input()
+        if isinstance(inputs, dict):
+            for key, value in inputs.items():
+                if key == "image_paths":
+                    return value  # Return the first occurrence of image_paths
+                result = self.find_image_paths(value)  # Recursively check nested structures
+                if result:
+                    return result
+        elif isinstance(inputs, list):
+            for item in inputs:
+                result = self.find_image_paths(item)
+                if result:
+                    return result
+        return None  # Return None if no image_paths key is found
+    
+    def set_image_paths(self, image_paths):
+        '''Set image paths in the global context'''
+        if not image_paths:
+            return
+        self.context["global"]["image_paths"] = image_paths
+    def get_image_paths(self):
+        '''Retrieve image paths from the global context'''
+        return self.context.get("global", {}).get("image_paths", None)
+    def extract_image_paths_from_inputs(self, inputs=None):
+        """Retrieve image paths from the input."""
+        if not inputs:
+            inputs = self.get_input()
+        if isinstance(inputs, dict):
+            for key, value in inputs.items():
+                if key == "image_paths":
+                    return value  # Return the first occurrence of image_paths
+                result = self.extract_image_paths_from_inputs(value)  # Recursively check nested structures
+                if result:
+                    return result
+        elif isinstance(inputs, list):
+            for item in inputs:
+                result = self.extract_image_paths_from_inputs(item)
+                if result:
+                    return result
+        return None  # Return None if no image_paths key is found
     def get_step_output(self, step_name, key):
         """Retrieve specific variable from a step's output."""
         return self.context.get(step_name, {}).get("outputs", {}).get(key, None)
@@ -103,3 +147,19 @@ class ExecutionContext:
                 ensure_ascii=False,
                 indent=4
             ))
+    def __str__(self):
+        """Returns a JSON string representation of the object for easier readability."""
+        return json.dumps(
+            {
+                "agent_id": self.agent.agent_id,
+                "timestamp": self.timestamp,
+                "context": self.context,
+                "logs": self.logs
+            },
+            ensure_ascii=False,
+            indent=4
+        )
+
+    def __repr__(self):
+        """Use the same representation as __str__ for debugging purposes."""
+        return self.__str__()

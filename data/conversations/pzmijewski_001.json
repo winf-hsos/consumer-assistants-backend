@@ -5,13 +5,17 @@
     "lines": [
         {
             "role": "user",
-            "message": "Hallo",
-            "timestamp": "2025-02-20T10:21:26.103947"
+            "message": "Habt ihr sowas im Sortiment?",
+            "image_paths": [
+                "C:\\code\\data\\image\\e6b7a9ac9b9cc2fb344749ff11e23a2c59e24bcbd773ff2032fa1d470e9edbca.jpg"
+            ],
+            "timestamp": "2025-02-26T17:07:04.938665"
         },
         {
             "role": "assistant",
-            "message": "Hallo! Wie läuft dein Tag bis jetzt? Planst du heute besondere Einkäufe?",
-            "timestamp": "2025-02-20T10:21:29.150832"
+            "message": "Hallo! Vielen Dank für Ihre Anfrage zu Schokoladenkeksen. Auch wenn wir derzeit eine köstliche Option anbieten, empfehle ich unsere **Doppelte Schokoladenkekse mit Haselnüssen** von De Rit.\n\nDiese Kekse sind eine wunderbare Mischung aus knusprigen, nussigen und buttrigen Aromen, hergestellt aus hochwertigen biologischen Zutaten. Sie sind gefüllt mit reichen Schokoladenstückchen und haben den zusätzlichen Crunch von Haselnüssen. Jeder Keks wird liebevoll nach traditionellen Rezepten gebacken, was einen Geschmack garantiert, der sowohl verwöhnend als auch gesund ist.\n\nHier sind einige Details:\n- **Preis:** 4,59 € für ein Paket.\n- **Zutaten:** Dazu gehören biologisches Weizenmehl, Schokoladenstückchen, Butter und Haselnüsse sowie andere natürliche Bestandteile.\n- **Kategorie:** Sie fallen in unsere Süßigkeiten- und Snack-Abteilungen.\n- **Gewicht:** Jedes Paket enthält 213 Gramm Köstlichkeit.\n\nWenn Sie an diesen Keksen interessiert sind, fragen Sie gerne nach, um eine Bestellung aufzugeben oder andere Details, die Sie benötigen könnten! Genießen Sie Ihre süße Leckerei!",
+            "image_paths": null,
+            "timestamp": "2025-02-26T17:07:19.513650"
         }
     ]
 }
